@@ -1,0 +1,49 @@
+# Do not touch this file
+# version: 2022-07-21
+
+name: Deploy Now - testplain2
+
+on:
+  - push
+  - workflow_dispatch
+
+jobs:
+  retrieve-project:
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-enabled: ${{ fromJson(steps.project.outputs.info).deployment-enabled }}
+      branch-id: ${{ fromJson(steps.project.outputs.info).branch-id }}
+    steps:
+      - name: Fetch project data
+        uses: ionos-deploy-now/project-action@main
+        id: project
+        with:
+          api-key: ${{ secrets.IONOS_API_KEY }}
+          service-host: api.prelive.ionos.space
+          project-id: f471a357-6a59-497b-a478-d1756a86a8fe
+          action: retrieve-info
+
+
+  build:
+    needs: retrieve-project
+    if: ${{ needs.retrieve-project.outputs.deployment-enabled == 'true' }}
+    uses: ./.github/workflows/testplain2-build.yaml
+    with:
+      site-url: https://IONOS_DEPLOY_NOW_SITE_URL
+      branch-id: ${{ needs.retrieve-project.outputs.branch-id }}
+    secrets: inherit
+
+  deploy:
+    needs:
+      - retrieve-project
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch deployment(s)
+        uses: ionos-deploy-now/project-action@main
+        with:
+          api-key: ${{ secrets.IONOS_API_KEY }}
+          service-host: api.prelive.ionos.space
+          project-id: f471a357-6a59-497b-a478-d1756a86a8fe
+          branch-id: ${{ needs.retrieve-project.outputs.branch-id }}
+          action: dispatch-deployments

@@ -1,0 +1,39 @@
+# To better understand this file read this:
+# https://docs.ionos.space/docs/github-actions-customization/
+
+name: Build - testplain2
+
+on:
+  workflow_call:
+    inputs:
+      site-url:
+        required: true
+        type: string
+      branch-id:
+        required: true
+        type: string
+
+env:
+  DEPLOYMENT_FOLDER: ./
+
+jobs:
+# Please do not rename this job
+  build-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+# Do not touch the following action
+      - name: Store deployment content
+        uses: ionos-deploy-now/artifact-action@master
+        with:
+          api-key: ${{ secrets.IONOS_API_KEY }}
+          service-host: api.prelive.ionos.space
+          project-id: f471a357-6a59-497b-a478-d1756a86a8fe
+          branch-id: ${{ inputs.branch-id }}
+          version: ${{ github.sha }}
+          folder: ${{ env.DEPLOYMENT_FOLDER }}
+          action: upload
